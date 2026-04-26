@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  labels:
+    app: backend
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+      annotations:
+        dapr.io/enabled: 'true'
+        dapr.io/app-id: 'todo-backend'
+        dapr.io/app-port: '8000'
+    spec:
+      {{- if .Values.backend.imagePullSecrets }}
+      imagePullSecrets:
+        {{- range .Values.backend.imagePullSecrets }}
+        - name: {{ .name }}
+        {{- end }}
+      {{- end }}
+      securityContext:
+        runAsUser: 0
+      containers:
+      - name: backend
+        image: "{{ .Values.backend.repository }}:{{ .Values.backend.tag }}"
+        imagePullPolicy: {{ .Values.backend.imagePullPolicy | default "Always" }}
+        ports:
+        - containerPort: {{ .Values.backend.port }}
+        env:
+          - name: DATABASE_URL
+            value: {{ .Values.env.DATABASE_URL | quote }}
+          - name: JWT_SECRET
+            value: {{ .Values.env.JWT_SECRET | quote }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+  labels:
+    app: frontend
+spec:
+  replicas: {{ .Values.frontend.replicaCount }}
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+      annotations:
+        dapr.io/enabled: 'true'
+        dapr.io/app-id: 'todo-frontend'
+        dapr.io/app-port: '3000'
+    spec:
+      {{- if .Values.frontend.imagePullSecrets }}
+      imagePullSecrets:
+        {{- range .Values.frontend.imagePullSecrets }}
+        - name: {{ .name }}
+        {{- end }}
+      {{- end }}
+      containers:
+      - name: frontend
+        image: "{{ .Values.frontend.repository }}:{{ .Values.frontend.tag }}"
+        imagePullPolicy: {{ .Values.frontend.imagePullPolicy | default "Always" }}
+        ports:
+        - containerPort: {{ .Values.frontend.port }}

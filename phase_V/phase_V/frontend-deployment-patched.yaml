@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+  namespace: todo-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      securityContext:
+        runAsNonRoot: false
+        runAsUser: 0
+      containers:
+      - name: frontend
+        image: mohammadtouqeer/phasev-frontend:v2
+        ports:
+        - containerPort: 3000
+        securityContext:
+          runAsNonRoot: false
+          runAsUser: 0

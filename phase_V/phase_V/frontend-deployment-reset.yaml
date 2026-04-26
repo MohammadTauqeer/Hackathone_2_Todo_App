@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+  namespace: todo-app
+  labels:
+    app: frontend
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+      annotations:
+        dapr.io/app-id: todo-frontend
+        dapr.io/app-port: "3000"
+        dapr.io/enabled: "true"
+        kubectl.kubernetes.io/restartedAt: "2026-02-06T00:27:40+05:00"
+    spec:
+      containers:
+      - name: frontend
+        image: mohammadtouqeer/phasev-frontend:latest@sha256:6b71937160d274651dc227175f68f620451eeacaa985e190112518d4c25858a9
+        ports:
+        - containerPort: 3000
+          protocol: TCP
+        resources: {}
+      imagePullSecrets:
+      - name: dockerhub-secret
+      restartPolicy: Always
+      dnsPolicy: ClusterFirst
+      schedulerName: default-scheduler

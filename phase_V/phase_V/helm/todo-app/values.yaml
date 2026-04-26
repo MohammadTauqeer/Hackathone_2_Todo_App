@@ -1,0 +1,28 @@
+# Environment variables
+env:
+  DATABASE_URL: "sqlite:///./test.db"
+  JWT_SECRET: "victory_secret_key_2026"
+
+# Backend configuration
+backend:
+  port: 8000
+  repository: mohammadtouqeer/todo-backend
+  tag: v2
+  imagePullPolicy: IfNotPresent
+  replicaCount: 1
+  imagePullSecrets:
+    - name: dockerhub-secret
+
+# Frontend configuration
+frontend:
+  port: 3000
+  repository: mohammadtouqeer/todo-frontend
+  tag: v2
+  imagePullPolicy: IfNotPresent
+  replicaCount: 1
+  imagePullSecrets:
+    - name: dockerhub-secret
+
+# Service configuration
+service:
+  type: LoadBalancer

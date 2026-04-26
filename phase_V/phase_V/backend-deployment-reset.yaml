@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  namespace: todo-app
+  labels:
+    app: backend
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+      annotations:
+        dapr.io/app-id: todo-backend
+        dapr.io/app-port: "8000"
+        dapr.io/enabled: "true"
+        kubectl.kubernetes.io/restartedAt: "2026-02-06T00:27:40+05:00"
+    spec:
+      containers:
+      - name: backend
+        image: mohammadtouqeer/phasev-backend:latest@sha256:626518cc8c9d8a362b65e4e8f706c3372d563466ebf75e3dbdab9ee40ae815f2
+        ports:
+        - containerPort: 8000
+          protocol: TCP
+        env:
+        - name: DATABASE_URL
+          value: sqlite:///./test.db
+        - name: JWT_SECRET
+          value: victory_secret_key_2026
+        resources: {}
+      imagePullSecrets:
+      - name: dockerhub-secret
+      restartPolicy: Always
+      dnsPolicy: ClusterFirst
+      schedulerName: default-scheduler
