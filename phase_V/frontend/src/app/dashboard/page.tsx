@@ -19,6 +19,9 @@ export default function DashboardPage() {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // NEW: Filter State
+  const [filterType, setFilterType] = useState<'All' | 'Active' | 'Completed'>('All');
 
   // Edit Mode state
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
@@ -150,7 +153,7 @@ export default function DashboardPage() {
 
     const previousTasks = [...tasks];
     setTasks(tasks.map(t => t.id === editingTaskId ? { ...t, title: editedTaskTitle } : t));
-    const taskIdToUpdate = editingTaskId; // Capture ID
+    const taskIdToUpdate = editingTaskId;
     setEditingTaskId(null);
 
     try {
@@ -199,11 +202,15 @@ export default function DashboardPage() {
     }
   };
 
-  // Filtered tasks
-  const filteredTasks = tasks.filter(task =>
-    task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    task.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // UPDATED: Filtered tasks logic includes both search AND tabs
+  const filteredTasks = tasks.filter(task => {
+    const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          task.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (filterType === 'Active') return matchesSearch && !task.completed;
+    if (filterType === 'Completed') return matchesSearch && task.completed;
+    return matchesSearch; // For 'All'
+  });
 
   return (
     <ProtectedRoute>
@@ -295,11 +302,7 @@ export default function DashboardPage() {
                           <CardTitle className="flex items-center gap-2 text-purple-700">
                               <Sparkles className="h-5 w-5" /> AI Task Analysis
                           </CardTitle>
-                          <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setShowAnalysis(false)}
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => setShowAnalysis(false)}>
                               <X className="h-4 w-4" />
                           </Button>
                       </div>
@@ -327,52 +330,15 @@ export default function DashboardPage() {
                               <p className="text-2xl font-bold text-purple-600">{analysis.stats.completion_rate}%</p>
                           </div>
                       </div>
-
                       {/* Insights */}
                       {analysis.insights.length > 0 && (
                           <div className="bg-purple-50/50 p-4 rounded-lg border border-purple-100">
-                              <h4 className="font-semibold mb-3 flex items-center gap-2 text-slate-900">
-                                  💡 Insights
-                              </h4>
+                              <h4 className="font-semibold mb-3 flex items-center gap-2 text-slate-900">💡 Insights</h4>
                               <ul className="space-y-2">
                                   {analysis.insights.map((insight, idx) => (
                                       <li key={idx} className="text-sm text-slate-600 flex items-start gap-2">
                                           <span className="text-purple-600 mt-0.5">•</span>
                                           <span>{insight}</span>
-                                      </li>
-                                  ))}
-                              </ul>
-                          </div>
-                      )}
-
-                      {/* Recommendations */}
-                      {analysis.recommendations.length > 0 && (
-                          <div className="bg-purple-50/50 p-4 rounded-lg border border-purple-100">
-                              <h4 className="font-semibold mb-3 flex items-center gap-2 text-slate-900">
-                                  🎯 Recommendations
-                              </h4>
-                              <ol className="space-y-2">
-                                  {analysis.recommendations.map((rec, idx) => (
-                                      <li key={idx} className="text-sm text-slate-600 flex items-start gap-2">
-                                          <span className="text-purple-600 font-semibold">{idx + 1}.</span>
-                                          <span>{rec}</span>
-                                      </li>
-                                  ))}
-                              </ol>
-                          </div>
-                      )}
-
-                      {/* Patterns */}
-                      {analysis.patterns.length > 0 && (
-                          <div className="bg-purple-50/50 p-4 rounded-lg border border-purple-100">
-                              <h4 className="font-semibold mb-3 flex items-center gap-2 text-slate-900">
-                                  🔍 Patterns Detected
-                              </h4>
-                              <ul className="space-y-2">
-                                  {analysis.patterns.map((pattern, idx) => (
-                                      <li key={idx} className="text-sm text-slate-600 flex items-start gap-2">
-                                          <span className="text-purple-600 mt-0.5">•</span>
-                                          <span>{pattern}</span>
                                       </li>
                                   ))}
                               </ul>
@@ -393,19 +359,8 @@ export default function DashboardPage() {
                   className="flex-1 h-12 text-lg bg-white focus:border-purple-400 focus:ring-purple-100 transition-colors"
                   disabled={isAddingTask}
                 />
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="h-12 px-6 shadow-md hover:shadow-lg transition-all bg-purple-600 hover:bg-purple-700 text-white"
-                  disabled={isAddingTask || !newTaskTitle.trim()}
-                >
-                  {isAddingTask ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <>
-                      <Plus className="mr-2 h-5 w-5" /> Add Task
-                    </>
-                  )}
+                <Button type="submit" size="lg" className="h-12 px-6 shadow-md hover:shadow-lg transition-all bg-purple-600 hover:bg-purple-700 text-white" disabled={isAddingTask || !newTaskTitle.trim()}>
+                  {isAddingTask ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Plus className="mr-2 h-5 w-5" /> Add Task</>}
                 </Button>
               </form>
             </CardContent>
@@ -422,10 +377,33 @@ export default function DashboardPage() {
                 className="pl-10 bg-white focus:border-purple-400 focus:ring-purple-100 shadow-none focus-visible:ring-1"
               />
             </div>
+            
+            {/* UPDATED: Dynamic Filter Buttons */}
             <div className="hidden sm:flex gap-2">
-               <Button variant="ghost" size="sm" className="font-medium text-slate-900">All</Button>
-               <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-900">Active</Button>
-               <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-900">Completed</Button>
+               <Button 
+                 variant="ghost" 
+                 size="sm" 
+                 className={filterType === 'All' ? "font-medium text-purple-700 bg-purple-100" : "text-slate-600 hover:text-slate-900"}
+                 onClick={() => setFilterType('All')}
+               >
+                 All
+               </Button>
+               <Button 
+                 variant="ghost" 
+                 size="sm" 
+                 className={filterType === 'Active' ? "font-medium text-purple-700 bg-purple-100" : "text-slate-600 hover:text-slate-900"}
+                 onClick={() => setFilterType('Active')}
+               >
+                 Active
+               </Button>
+               <Button 
+                 variant="ghost" 
+                 size="sm" 
+                 className={filterType === 'Completed' ? "font-medium text-purple-700 bg-purple-100" : "text-slate-600 hover:text-slate-900"}
+                 onClick={() => setFilterType('Completed')}
+               >
+                 Completed
+               </Button>
             </div>
           </div>
 
@@ -500,21 +478,11 @@ export default function DashboardPage() {
 
                           <div className="flex items-center w-full sm:w-auto justify-end">
                               {editingTaskId !== task.id && (
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-slate-400 hover:text-purple-600 hover:bg-purple-50 shrink-0 mr-1"
-                                    onClick={() => startEditing(task)}
-                                >
+                                <Button variant="ghost" size="icon" className="text-slate-400 hover:text-purple-600 hover:bg-purple-50 shrink-0 mr-1" onClick={() => startEditing(task)}>
                                     <Edit2 className="h-4 w-4" />
                                 </Button>
                               )}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-slate-400 hover:text-red-600 hover:bg-red-50 shrink-0"
-                                onClick={() => handleDeleteTask(task.id)}
-                              >
+                              <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-600 hover:bg-red-50 shrink-0" onClick={() => handleDeleteTask(task.id)}>
                                 <Trash2 className="h-5 w-5" />
                               </Button>
                           </div>
@@ -531,13 +499,10 @@ export default function DashboardPage() {
                         </div>
                         <h3 className="text-xl font-semibold mb-2 text-slate-900">No tasks found</h3>
                         <p className="text-slate-600 max-w-sm mx-auto mb-6">
-                            {searchQuery ? "No tasks match your search." : "You don't have any tasks yet. Create one to get started!"}
+                            {searchQuery ? "No tasks match your search." : (filterType !== 'All' ? `You don't have any ${filterType.toLowerCase()} tasks.` : "You don't have any tasks yet. Create one to get started!")}
                         </p>
-                        {!searchQuery && (
-                          <Button
-                            variant="outline"
-                            onClick={() => document.querySelector('input')?.focus()}
-                          >
+                        {!searchQuery && filterType === 'All' && (
+                          <Button variant="outline" onClick={() => document.querySelector('input')?.focus()}>
                             Create your first task
                           </Button>
                         )}
